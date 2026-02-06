@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
       if (is_valid) {
         printf("%s is a shell builtin\n", command_name);
       } else {
-        printf("%s: command not found\n", command_name);
+        printf("%s: not found\n", command_name);
       }
       break;
     case 3:
