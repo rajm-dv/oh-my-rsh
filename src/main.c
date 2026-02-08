@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 const char *BUILTINS[] = {"exit", "echo", "type", "cd", "pwd"};
 const int BUILTINS_LEN = sizeof(BUILTINS) / sizeof(BUILTINS[0]);
@@ -50,7 +51,29 @@ int main(int argc, char *argv[]) {
       if (is_valid) {
         printf("%s is a shell builtin\n", command_name);
       } else {
-        printf("%s: not found\n", command_name);
+        char *path_env = strdup(getenv("PATH"));
+        const char *path_sep = ":";
+        char *path = strtok(path_env, path_sep);
+
+        char program_path[1024];
+        int found = 0;
+        while (path != NULL) {
+          FILE *fp;
+
+          snprintf(program_path, sizeof(program_path), "%s/%s", path,
+                   command_name);
+          fp = fopen(program_path, "r");
+          if (fp && access(program_path, X_OK) == 0) {
+            found = 1;
+            break;
+          }
+          path = strtok(NULL, path_sep);
+        }
+        if (found) {
+          printf("%s is %s\n", command_name, program_path);
+        } else {
+          printf("%s: not found\n", command_name);
+        }
       }
       break;
     case 3:
