@@ -32,6 +32,11 @@ int main(int argc, char *argv[]) {
       printf("%s: command not found\n", command);
     }
 
+    char *path_env = strdup(getenv("PATH"));
+    const char *path_sep = ":";
+    char *path = strtok(path_env, path_sep);
+    FILE *fp;
+
     switch (pos) {
     case 0:
       exit(0);
@@ -51,17 +56,13 @@ int main(int argc, char *argv[]) {
       if (is_valid) {
         printf("%s is a shell builtin\n", command_name);
       } else {
-        char *path_env = strdup(getenv("PATH"));
-        const char *path_sep = ":";
-        char *path = strtok(path_env, path_sep);
-
         char program_path[1024];
         int found = 0;
-        while (path != NULL) {
-          FILE *fp;
 
+        while (path != NULL) {
           snprintf(program_path, sizeof(program_path), "%s/%s", path,
                    command_name);
+
           fp = fopen(program_path, "r");
           if (fp && access(program_path, X_OK) == 0) {
             found = 1;
@@ -69,6 +70,7 @@ int main(int argc, char *argv[]) {
           }
           path = strtok(NULL, path_sep);
         }
+        fclose(fp);
         if (found) {
           printf("%s is %s\n", command_name, program_path);
         } else {
@@ -83,7 +85,27 @@ int main(int argc, char *argv[]) {
       // execute pwd command
       break;
     default:
-      continue;
+      // execute custom commands
+      char exec_path[1024];
+      int found = 0;
+
+      while (path != NULL) {
+        snprintf(exec_path, sizeof(exec_path), "%s/%s", path, command_name);
+
+        fp = fopen(exec_path, "r");
+        if (fp && access(exec_path, X_OK) == 0) {
+          found = 1;
+          break;
+        }
+        path = strtok(NULL, path_sep);
+      }
+      fclose(fp);
+      if (found) {
+        system(command);
+      } else {
+        printf("%s: not found\n", command_name);
+      }
+      break;
     }
   }
 
