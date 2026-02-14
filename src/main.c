@@ -7,8 +7,6 @@ const char *BUILTINS[] = {"exit", "echo", "type", "cd", "pwd"};
 const int BUILTINS_LEN = sizeof(BUILTINS) / sizeof(BUILTINS[0]);
 
 int main(int argc, char *argv[]) {
-  (void)argc;
-  (void)argv;
   setbuf(stdout, NULL);
 
   while (1) {
@@ -28,10 +26,7 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    if (!found) {
-      printf("%s: command not found\n", command);
-    }
-
+    // extract $PATH env
     char *path_env = strdup(getenv("PATH"));
     const char *path_sep = ":";
     char *path = strtok(path_env, path_sep);
@@ -39,12 +34,15 @@ int main(int argc, char *argv[]) {
 
     switch (pos) {
     case 0:
+      // exit command
       exit(0);
       break;
     case 1:
+      // echo command
       printf("%s\n", command + 5);
       break;
     case 2:
+      // type command
       char *command_name = command + 5;
       int is_valid = 0;
       for (int i = 0; i < BUILTINS_LEN; i++) {
@@ -86,24 +84,26 @@ int main(int argc, char *argv[]) {
       break;
     default:
       // execute custom commands
+      char exec_name[1024];
+      sscanf(command, "%s", exec_name);
+
       char exec_path[1024];
       int found = 0;
 
-      while (path != NULL) {
-        snprintf(exec_path, sizeof(exec_path), "%s/%s", path, command_name);
-
+      while(path != NULL) {
+        snprintf(exec_path, sizeof(exec_path), "%s/%s", path, exec_name);
         fp = fopen(exec_path, "r");
-        if (fp && access(exec_path, X_OK) == 0) {
+        if(fp && access(exec_path, X_OK) == 0) {
           found = 1;
           break;
         }
         path = strtok(NULL, path_sep);
       }
       fclose(fp);
-      if (found) {
+      if(found) {
         system(command);
       } else {
-        printf("%s: not found\n", command_name);
+        printf("%s: command not found\n", command);
       }
       break;
     }
